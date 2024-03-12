@@ -1,23 +1,20 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 
 function App() {
+  const handleClick = (buttonNumber: number) => {
+    console.log(`Button ${buttonNumber} clicked`);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.tsx</code> and save to reload.
+          Click any button:
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <button onClick={() => handleClick(1)}>Button 1</button>
+        <button onClick={() => handleClick(2)}>Button 2</button>
+        <button onClick={() => handleClick(3)}>Button 3</button>
       </header>
     </div>
   );
