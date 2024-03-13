@@ -15,6 +15,8 @@ import {
     web3FromSource
   } from "@polkadot/extension-dapp";
 
+  import * as CryptoJS from 'crypto-js'; //"npm install crypto-js" then "npm install --save @types/crypto-js"
+
 
 function App() {
   type InjectedAccountWithMeta = Awaited<ReturnType<typeof web3Accounts>>[number];
@@ -25,9 +27,7 @@ function App() {
   const [extensions, setExtensions] = useState<InjectedExtension[]>([]);
   const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
 
-  const handleClick = (buttonNumber: number) => {
-    console.log(`Button ${buttonNumber} clicked`);
-  };
+  
 
   const toContractAbiMessage = (
     contractPromise: ContractPromise,
@@ -89,7 +89,7 @@ function App() {
     }
 
     
-    var i = 0;
+    i = 0;
     while (i < contentHedge.length && i < phrase.length){
         var c = contentHedge.charAt(i);
         if (i % 2 != 0){
@@ -101,6 +101,90 @@ function App() {
 
     
     return phrase;
+}
+
+const stringToChanks =(str: string, chunkSize: number): string[] => {
+  const chunks = [];
+  while (str.length > 0) {
+      chunks.push(str.substring(0, chunkSize));
+      str = str.substring(chunkSize, str.length);
+  }
+  return chunks
+}
+
+
+const encrypt = (message: string, key_full: string, codes: number[]): string[] =>{
+  if (message.length > 500) {
+      throw "Message Length too long. Must be under 500 chars.";
+  }
+
+  var plen = (message.length / 3);
+  if (message.length % 3 != 0) {
+      plen ++;
+  }
+
+  var message_packets = stringToChanks(message, plen);
+  var key = stringToChanks(key_full, key_full.length/3);
+
+  var i  = 0;
+  var ct = [];
+
+
+  while (i < 3) {
+      var temp;
+      if (codes[i] == 0){
+          temp = CryptoJS.AES.encrypt(message_packets[i], key[i]);
+          ct[i] = temp.toString();
+      }
+      else if (codes[i] == 1){
+          temp = CryptoJS.TripleDES.encrypt(message_packets[i], key[i]);
+          ct[i] = temp.toString();
+      }
+      else {
+          temp = CryptoJS.Rabbit.encrypt(message_packets[i], key[i]);
+          ct[i] = temp.toString();
+      }
+      
+      i++;
+      
+  }
+
+  return ct;
+
+}
+
+const  decrypt = (ct: string[], key_full: string, codes: number[]): string => {
+  var i = 0;
+  var pt = [];
+  var key = stringToChanks(key_full, key_full.length/3);
+
+  while (i < 3) {
+      if (codes[i] == 0){
+          pt[i] = CryptoJS.AES.decrypt(ct[i], key[i]).toString(CryptoJS.enc.Utf8);
+      }
+      else if (codes[i] == 1){
+          pt[i] = CryptoJS.TripleDES.decrypt(ct[i], key[i]).toString(CryptoJS.enc.Utf8);
+      }
+      else {
+          pt[i] = CryptoJS.Rabbit.decrypt(ct[i], key[i]).toString(CryptoJS.enc.Utf8);
+      }
+      
+      i++;
+  }
+
+  var pt_full = pt[0].concat(pt[1]).concat(pt[2]);
+  return pt_full;
+}
+
+const testEncDecr = () => {
+  const k = createPhrase('lots of cows');
+  const mess = 'this is only a test, brought to you by Night Sky Labs, that serves no purpose in particular. or does it? who knows';
+  const codes = [0, 1, 1];
+  const encText = encrypt(mess, k, codes);
+  const decText = decrypt(encText, k, codes);
+  console.log(encText);
+  console.log(decText);
+  
 }
 
   
@@ -143,7 +227,7 @@ const createMail = async (content: string): Promise<void> => {
   
   const to = '5CfEVT4RFuCrhYYPBvCVwgFGMukwwvJGFhwLbTecvoVf6Uvz';
   const mailId = mail_id;//'mail_frontend';
-  const phrase = 'trialanderror';
+  const phrase = phr;
   const gasLimitResult = await getGasLimit(
     api,
     userAccount.address,
@@ -188,7 +272,7 @@ const createMail = async (content: string): Promise<void> => {
     });
 
 
- 
+
 };
 
   const fetchPartialEncr = async (mid: string) => {
@@ -231,7 +315,7 @@ const createMail = async (content: string): Promise<void> => {
 
   }
 
-  const fetchContacts = async () => {
+  const fetchReceivedMail = async () => {
     const APP_PROVIDER_URL = "wss://ws.test.azero.dev";
 
     const wsProvider = new WsProvider(APP_PROVIDER_URL);
@@ -286,7 +370,8 @@ const createMail = async (content: string): Promise<void> => {
         </p>
         <button onClick={() => createMail('This is a very nice mail. Hope you enjoy it.')}>Create</button>
         <button onClick={() => fetchPartialEncr('mail02')}>Encryption</button>
-        <button onClick={() => fetchContacts()}>Contacts</button>
+        <button onClick={() => fetchReceivedMail()}>Received Mail</button>
+        <button onClick={() => testEncDecr()}>Encrypt Then Decrypt</button>
       </header>
     </div>
   );
