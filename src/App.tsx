@@ -76,8 +76,35 @@ function App() {
     return { ok: true, value: gasRequired };
   };
 
+  const createPhrase = (content: string): string => {
+    var contentHedge = content.replace(/[^\w]/g,'');
+    var charsArray =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var lengthPhrase = 36;
+
+    var phrase = "";
+    for (var i = 0; i < lengthPhrase; i++) {
+        var index = Math.floor(Math.random() * charsArray.length); 
+        phrase = phrase.concat(charsArray[index]);
+    }
+
+    
+    var i = 0;
+    while (i < contentHedge.length && i < phrase.length){
+        var c = contentHedge.charAt(i);
+        if (i % 2 != 0){
+          phrase = phrase.substring(0, i) + c + phrase.substring(i+1)
+        }
+        i += 1;
+    }
+
+
+    
+    return phrase;
+}
+
   
-const createMail = async (): Promise<void> => {
+const createMail = async (content: string): Promise<void> => {
   const injectedExtensions = await web3Enable(APP_NAME);
   setExtensions(injectedExtensions);
 
@@ -106,10 +133,16 @@ const createMail = async (): Promise<void> => {
     address
   );
 
+  const date = new Date();
+  const now = Math.floor(date.getTime()/1000);
+  const mail_id = userAccount.address.toString().concat('@').concat(now.toString());
+  console.log(mail_id);
+  const phr = createPhrase(content);
+  console.log(phr);
   
-
+  
   const to = '5CfEVT4RFuCrhYYPBvCVwgFGMukwwvJGFhwLbTecvoVf6Uvz';
-  const mailId = 'mail_frontend';
+  const mailId = mail_id;//'mail_frontend';
   const phrase = 'trialanderror';
   const gasLimitResult = await getGasLimit(
     api,
@@ -242,6 +275,7 @@ const createMail = async (): Promise<void> => {
       if (result.isErr) {
         console.log(result.toHuman());
       }
+      
   }
 
   return (
@@ -250,7 +284,7 @@ const createMail = async (): Promise<void> => {
         <p>
           Click any button:
         </p>
-        <button onClick={() => createMail()}>Create</button>
+        <button onClick={() => createMail('This is a very nice mail. Hope you enjoy it.')}>Create</button>
         <button onClick={() => fetchPartialEncr('mail02')}>Encryption</button>
         <button onClick={() => fetchContacts()}>Contacts</button>
       </header>
